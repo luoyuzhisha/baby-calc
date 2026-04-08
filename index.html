@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>10以内加减法训练</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="range-switch" aria-label="题目范围切换">
+      <button type="button" class="range-btn active" data-range="10" aria-pressed="true">10以内加减法</button>
+      <button type="button" class="range-btn" data-range="20" aria-pressed="false">20以内加减法</button>
+      <button type="button" class="range-btn" data-range="50" aria-pressed="false">50以内加减法</button>
+    </section>
+
+    <section class="question-panel" aria-live="polite">
+      <div class="question-meta">
+        <span id="questionCount">第 1 / 10 题</span>
+        <div class="live-score">
+          <span class="score-pill ok">对 <b id="correctCount">0</b></span>
+          <span class="score-pill wrong">错 <b id="wrongCount">0</b></span>
+          <span class="score-pill timeout">超时 <b id="timeoutCount">0</b></span>
+        </div>
+      </div>
+
+      <p id="questionText" class="question-text">0 + 0 = ?</p>
+      <p class="answer-preview">你的答案: <span id="answerPreview">_</span></p>
+      <p id="statusText" class="status-line status-info">请在 30 秒内完成本题</p>
+    </section>
+
+    <section class="keyboard-panel" aria-label="数字键盘">
+      <div id="answerPad" class="answer-pad"></div>
+      <div class="action-row">
+        <button id="clearBtn" type="button" class="action-btn">删除</button>
+        <button id="submitBtn" type="button" class="action-btn primary">提交</button>
+        <button id="nextBtn" type="button" class="action-btn next hidden">下一题</button>
+      </div>
+    </section>
+
+    <section class="timer-panel">
+      <div class="timer-head">
+        <span>捕捉倒计时</span>
+        <div class="timer-head-right">
+          <strong id="timeLeft">30.0s</strong>
+          <label for="durationSelect" class="duration-label">时长</label>
+          <select id="durationSelect" class="duration-select" aria-label="选择倒计时时长"></select>
+          <button id="fullscreenBtn" type="button" class="action-btn fullscreen-btn">全屏</button>
+        </div>
+      </div>
+
+      <div class="timer-visual">
+        <div class="timer-track" aria-hidden="true">
+          <div id="timerFill" class="timer-fill"></div>
+          <img id="runnerCharacter" class="character runner-character" alt="前进卡通人物">
+        </div>
+        <img id="startCharacter" class="character start-character" alt="右侧卡通人物">
+      </div>
+    </section>
+  </main>
+
+  <div id="summaryModal" class="summary-modal hidden" role="dialog" aria-modal="true" aria-labelledby="summaryTitle">
+    <div class="summary-card">
+      <h2 id="summaryTitle">本轮练习完成</h2>
+      <p id="summaryText">你做得很棒，继续保持。</p>
+      <div class="summary-grid">
+        <div><span>正确</span><strong id="finalCorrect">0</strong></div>
+        <div><span>错误</span><strong id="finalWrong">0</strong></div>
+        <div><span>超时</span><strong id="finalTimeout">0</strong></div>
+        <div><span>正确率</span><strong id="finalAccuracy">0%</strong></div>
+      </div>
+      <button id="restartBtn" type="button" class="action-btn primary restart-btn">再来一轮</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
