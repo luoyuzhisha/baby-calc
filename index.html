@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>10以内加减法训练</title>
+  <title>4岁口算冒险训练</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
@@ -11,66 +11,111 @@
 </head>
 <body>
   <main class="app-shell">
-    <section class="range-switch" aria-label="题目范围切换">
-      <button type="button" class="range-btn active" data-range="10" aria-pressed="true">10以内加减法</button>
-      <button type="button" class="range-btn" data-range="20" aria-pressed="false">20以内加减法</button>
-      <button type="button" class="range-btn" data-range="50" aria-pressed="false">50以内加减法</button>
+    <section class="stage-panel" aria-label="关卡进度">
+      <div class="stage-head">
+        <strong id="stageTitle">今日冒险训练</strong>
+        <div class="parent-controls">
+          <label for="questionDurationSelect" class="duration-label">每题时长</label>
+          <select id="questionDurationSelect" class="duration-select" aria-label="每题倒计时时长"></select>
+          <button id="soundBtn" type="button" class="action-btn subtle">音效：关</button>
+          <button id="fullscreenBtn" type="button" class="action-btn subtle">全屏</button>
+        </div>
+      </div>
+      <div class="stage-chips" role="list" aria-label="关卡列表">
+        <span id="stageChipA" class="stage-chip active" role="listitem">A 热身关</span>
+        <span id="stageChipB" class="stage-chip" role="listitem">B 主训练关</span>
+        <span id="stageChipC" class="stage-chip" role="listitem">C 挑战关</span>
+      </div>
+      <p id="stageMeta" class="stage-meta">我们先做热身题，拿到第一颗星星。</p>
     </section>
 
     <section class="question-panel" aria-live="polite">
       <div class="question-meta">
-        <span id="questionCount">第 1 / 10 题</span>
+        <span id="questionCount">A 热身关 第 1 / 8 题</span>
         <div class="live-score">
           <span class="score-pill ok">对 <b id="correctCount">0</b></span>
           <span class="score-pill wrong">错 <b id="wrongCount">0</b></span>
-          <span class="score-pill timeout">超时 <b id="timeoutCount">0</b></span>
+          <span class="score-pill help">帮 <b id="assistCount">0</b></span>
         </div>
+      </div>
+
+      <div class="sprite-row" aria-live="polite">
+        <span class="sprite-avatar" aria-hidden="true">🧚</span>
+        <p id="spriteLine" class="sprite-line">小挑战精灵：准备好了吗？</p>
       </div>
 
       <p id="questionText" class="question-text">0 + 0 = ?</p>
       <p class="answer-preview">你的答案: <span id="answerPreview">_</span></p>
-      <p id="statusText" class="status-line status-info">请在 30 秒内完成本题</p>
+      <p id="statusText" class="status-line status-info">慢慢来，我们一起完成。</p>
+      <p id="assistHint" class="assist-hint hidden" aria-live="polite"></p>
+      <div id="binaryChoices" class="binary-choices hidden" aria-label="二选一帮助"></div>
+      <div id="lightReward" class="light-reward hidden" aria-hidden="true">⭐</div>
     </section>
 
     <section class="keyboard-panel" aria-label="数字键盘">
       <div id="answerPad" class="answer-pad"></div>
-      <div class="action-row">
+      <div class="action-row three-col">
         <button id="clearBtn" type="button" class="action-btn">删除</button>
         <button id="submitBtn" type="button" class="action-btn primary">提交</button>
         <button id="nextBtn" type="button" class="action-btn next hidden">下一题</button>
       </div>
     </section>
 
-    <section class="timer-panel">
+    <section class="timer-panel" aria-label="节奏提示">
       <div class="timer-head">
-        <span>捕捉倒计时</span>
-        <div class="timer-head-right">
-          <strong id="timeLeft">30.0s</strong>
-          <label for="durationSelect" class="duration-label">时长</label>
-          <select id="durationSelect" class="duration-select" aria-label="选择倒计时时长"></select>
-          <button id="fullscreenBtn" type="button" class="action-btn fullscreen-btn">全屏</button>
-        </div>
+        <span>云朵朋友</span>
+        <strong id="timeLeft" class="parent-timer" aria-label="家长参考倒计时">12.0s</strong>
       </div>
 
-      <div class="timer-visual">
-        <div class="timer-track" aria-hidden="true">
-          <div id="timerFill" class="timer-fill"></div>
-          <img id="runnerCharacter" class="character runner-character" alt="前进卡通人物">
-        </div>
-        <img id="startCharacter" class="character start-character" alt="右侧卡通人物">
+      <div id="cloudFriend" class="cloud-friend cloud-green" aria-hidden="true">
+        <span id="cloudFace" class="cloud-face">😊</span>
+        <span id="cloudText">云朵在陪你想一想</span>
       </div>
     </section>
   </main>
 
+  <div id="gentlePromptModal" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="gentlePromptTitle">
+    <div class="overlay-card gentle-card">
+      <h2 id="gentlePromptTitle">要休息一下吗？</h2>
+      <p>点“继续”我们马上接着做，点“休息一下”会暂停 30 秒。</p>
+      <div class="overlay-actions">
+        <button id="gentleContinueBtn" type="button" class="action-btn primary">继续</button>
+        <button id="gentleBreakBtn" type="button" class="action-btn">休息一下</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="breakOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="breakTitle">
+    <div class="overlay-card break-card">
+      <h2 id="breakTitle">小休息时间</h2>
+      <p id="breakText">30 秒后自动继续</p>
+      <button id="breakResumeBtn" type="button" class="action-btn primary">立即继续</button>
+    </div>
+  </div>
+
+  <div id="rewardOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rewardTitle">
+    <div class="overlay-card reward-card">
+      <h2 id="rewardTitle">关卡完成</h2>
+      <p id="rewardText">太棒了，拿到一颗星星。</p>
+      <img id="stageRewardGif" class="stage-reward-gif hidden" src="" alt="关卡奖励动画">
+      <button id="rewardSkipBtn" type="button" class="action-btn">跳过动画</button>
+    </div>
+  </div>
+
   <div id="summaryModal" class="summary-modal hidden" role="dialog" aria-modal="true" aria-labelledby="summaryTitle">
     <div class="summary-card">
-      <h2 id="summaryTitle">本轮练习完成</h2>
-      <p id="summaryText">你做得很棒，继续保持。</p>
+      <h2 id="summaryTitle">今日训练完成</h2>
+      <p id="summaryText">小挑战精灵为你喝彩。</p>
+
+      <button id="fireworkBtn" type="button" class="firework-btn">点一下烟花</button>
+      <img id="fireworkBurst" class="firework-burst hidden" src="./img/fireworks-transparent.gif" alt="烟花动画">
+
       <div class="summary-grid">
-        <div><span>正确</span><strong id="finalCorrect">0</strong></div>
-        <div><span>错误</span><strong id="finalWrong">0</strong></div>
-        <div><span>超时</span><strong id="finalTimeout">0</strong></div>
+        <div><span>完成关卡</span><strong id="finalStages">0</strong></div>
         <div><span>正确率</span><strong id="finalAccuracy">0%</strong></div>
+        <div><span>勇气星</span><strong id="finalCourage">-</strong></div>
+        <div><span>策略星</span><strong id="finalStrategy">-</strong></div>
+        <div><span>进步星</span><strong id="finalProgress">-</strong></div>
       </div>
       <button id="restartBtn" type="button" class="action-btn primary restart-btn">再来一轮</button>
     </div>
