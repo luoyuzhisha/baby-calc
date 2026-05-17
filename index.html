@@ -17,6 +17,11 @@
         <div class="parent-controls">
           <label for="questionDurationSelect" class="duration-label">每题时长</label>
           <select id="questionDurationSelect" class="duration-select" aria-label="每题倒计时时长"></select>
+          <label for="rewardAnimationModeSelect" class="duration-label">动画模式</label>
+          <select id="rewardAnimationModeSelect" class="duration-select" aria-label="结算动画模式">
+            <option value="video">动画</option>
+            <option value="gif">动图</option>
+          </select>
           <button id="soundBtn" type="button" class="action-btn subtle">音效：关</button>
           <button id="fullscreenBtn" type="button" class="action-btn subtle">全屏</button>
         </div>
@@ -95,13 +100,6 @@
 
   <div id="rewardOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rewardTitle">
     <div class="overlay-card reward-card">
-      <div class="reward-mode-control">
-        <label for="rewardAnimationModeSelect" class="reward-mode-label">动画模式</label>
-        <select id="rewardAnimationModeSelect" class="reward-mode-select" aria-label="结算动画模式">
-          <option value="video">动画</option>
-          <option value="gif">动图</option>
-        </select>
-      </div>
       <h2 id="rewardTitle">关卡完成</h2>
       <p id="rewardText">太棒了，拿到一颗星星。</p>
       <video

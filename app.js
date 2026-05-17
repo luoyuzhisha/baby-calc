@@ -416,9 +416,6 @@ function bindEvents() {
     if (!state.ui.rewardSkippable) {
       return;
     }
-    if (event.target && event.target.closest(".reward-mode-control")) {
-      return;
-    }
 
     closeRewardOverlay();
     proceedAfterReward();
