@@ -539,7 +539,7 @@ body {
   margin-bottom: 12px;
 }
 
-.stage-reward-gif {
+.stage-reward-video {
   display: block;
   margin: 0 auto 12px;
   width: min(260px, 70vw);
@@ -577,19 +577,6 @@ body {
 .summary-card p {
   margin: 8px 0 12px;
   color: #48566a;
-}
-
-.firework-btn {
-  appearance: none;
-  border: 0;
-  border-radius: 14px;
-  font-family: inherit;
-  font-size: 1rem;
-  font-weight: 700;
-  color: #304a67;
-  background: linear-gradient(180deg, #f4f9ff, #e6f0ff);
-  padding: 10px 16px;
-  cursor: pointer;
 }
 
 .firework-burst {

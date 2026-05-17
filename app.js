@@ -43,15 +43,15 @@ const CLOUD_THRESHOLDS = {
   greenEnd: 0.55,
   midEnd: 0.25,
 };
-const IDLE_GENTLE_PROMPT_MS = 15000;
 const GENTLE_PROMPT_THRESHOLD = 2;
 const BREAK_DURATION_SEC = 30;
 const MAX_ANSWER_DIGITS = 2;
 const LIGHT_REWARD_DURATION_MS = 1500;
 const AUTO_NEXT_DELAY_AFTER_CORRECT_MS = LIGHT_REWARD_DURATION_MS;
-const STAGE_GIF_MIN = 1;
-const STAGE_GIF_MAX = 11;
+const STAGE_VIDEO_MIN = 1;
+const STAGE_VIDEO_MAX = 12;
 const STAGE_REWARD_DURATION_MS = 10000;
+const STAGE_PASS_MIN_ACCURACY = 0.8;
 const QUESTION_DURATION_MIN_SEC = 10;
 const QUESTION_DURATION_MAX_SEC = 90;
 const QUESTION_DURATION_STEP_SEC = 10;
@@ -206,7 +206,7 @@ const elements = {
   rewardOverlay: document.getElementById("rewardOverlay"),
   rewardTitle: document.getElementById("rewardTitle"),
   rewardText: document.getElementById("rewardText"),
-  stageRewardGif: document.getElementById("stageRewardGif"),
+  stageRewardVideo: document.getElementById("stageRewardVideo"),
   rewardSkipBtn: document.getElementById("rewardSkipBtn"),
 
   summaryModal: document.getElementById("summaryModal"),
@@ -216,7 +216,6 @@ const elements = {
   finalCourage: document.getElementById("finalCourage"),
   finalStrategy: document.getElementById("finalStrategy"),
   finalProgress: document.getElementById("finalProgress"),
-  fireworkBtn: document.getElementById("fireworkBtn"),
   fireworkBurst: document.getElementById("fireworkBurst"),
   restartBtn: document.getElementById("restartBtn"),
 };
@@ -364,7 +363,6 @@ function bindEvents() {
     elements.questionDurationSelect.addEventListener("change", applyQuestionDurationFromSelect);
   }
 
-  elements.fireworkBtn.addEventListener("click", triggerFireworkBurst);
   elements.restartBtn.addEventListener("click", startSession);
 
   elements.gentleContinueBtn.addEventListener("click", () => {
@@ -671,17 +669,12 @@ function goToStage(stageId) {
   }
 
   if (stageId === "C" && !state.history.unlockedToday) {
-    state.currentStageId = "C";
-    state.phase = "stage-complete";
-    state.stageStartAt = performance.now();
-    state.stageQuestionIndex = 0;
-    state.session.currentStageMap.C.done = true;
-    state.session.stagesDone += 1;
     elements.stageTitle.textContent = `${STAGE_CONFIG.C.title}（今日锁定）`;
     elements.stageMeta.textContent = "今天先把主训练练扎实，挑战关明天再来。";
     renderStageChips();
     setSpriteLine("challengeLocked");
-    showStageReward("C", "今天先把主训练练扎实，挑战关明天再来。");
+    setStatus("info", "挑战关今天先锁定，我们下次再来。");
+    finishSession();
     return;
   }
 
@@ -781,9 +774,16 @@ function shouldStageEndNow() {
 
 function completeCurrentStage() {
   stopQuestionTimer();
-  state.phase = "stage-complete";
-
   const currentStage = state.currentStageId;
+  if (!isStageQualifiedForProgress(currentStage)) {
+    state.phase = "stage-incomplete";
+    setStatus("warning", `${STAGE_CONFIG[currentStage].title}未达成过关条件，本次先结束。`);
+    setSpriteLine("今天先到这里，我们下次继续。");
+    finishSession();
+    return;
+  }
+
+  state.phase = "stage-complete";
   state.session.currentStageMap[currentStage].done = true;
   state.session.stagesDone += 1;
 
@@ -798,7 +798,7 @@ function completeCurrentStage() {
 function showStageReward(stageId, text) {
   elements.rewardTitle.textContent = `${STAGE_CONFIG[stageId].title} 完成`;
   elements.rewardText.textContent = text;
-  renderStageRewardGif(stageId);
+  renderStageRewardVideo(stageId);
   elements.rewardOverlay.classList.remove("hidden");
   state.ui.rewardSkippable = true;
 
@@ -815,7 +815,7 @@ function showStageReward(stageId, text) {
 function closeRewardOverlay() {
   elements.rewardOverlay.classList.add("hidden");
   state.ui.rewardSkippable = false;
-  hideStageRewardGif();
+  hideStageRewardVideo();
 
   if (state.ui.rewardTimerId) {
     window.clearTimeout(state.ui.rewardTimerId);
@@ -838,42 +838,67 @@ function proceedAfterReward() {
   goToStage(nextStageId);
 }
 
-function renderStageRewardGif(stageId) {
-  if (!elements.stageRewardGif) {
+function renderStageRewardVideo(stageId) {
+  if (!elements.stageRewardVideo) {
     return;
   }
 
   if (stageId !== "A" && stageId !== "B" && stageId !== "C") {
-    hideStageRewardGif();
+    hideStageRewardVideo();
     return;
   }
 
-  const index = pickRandomStageGifIndex();
-  const src = buildStageGifSrc(index);
+  const video = elements.stageRewardVideo;
+  const preferredSrc = buildStageVideoSrc(pickRandomStageVideoIndex());
+  const fallbackSrc = buildStageVideoSrc(STAGE_VIDEO_MIN);
 
-  elements.stageRewardGif.onerror = () => {
-    elements.stageRewardGif.onerror = null;
-    elements.stageRewardGif.src = buildStageGifSrc(STAGE_GIF_MIN);
+  const playSource = (src, isFallback) => {
+    video.onerror = () => {
+      video.onerror = null;
+      if (isFallback) {
+        hideStageRewardVideo();
+        return;
+      }
+      playSource(fallbackSrc, true);
+    };
+
+    video.pause();
+    video.classList.remove("hidden");
+    video.removeAttribute("src");
+    video.load();
+    video.src = src;
+    video.currentTime = 0;
+    video.load();
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {
+        // Ignore autoplay rejections and keep UI flow running.
+      });
+    }
   };
-  elements.stageRewardGif.src = "";
-  elements.stageRewardGif.src = src;
-  elements.stageRewardGif.classList.remove("hidden");
+
+  playSource(preferredSrc, preferredSrc === fallbackSrc);
 }
 
-function hideStageRewardGif() {
-  if (!elements.stageRewardGif) {
+function hideStageRewardVideo() {
+  if (!elements.stageRewardVideo) {
     return;
   }
-  elements.stageRewardGif.classList.add("hidden");
-  elements.stageRewardGif.src = "";
+
+  const video = elements.stageRewardVideo;
+  video.pause();
+  video.classList.add("hidden");
+  video.onerror = null;
+  video.removeAttribute("src");
+  video.load();
 }
 
-function pickRandomStageGifIndex() {
-  return randomIntInRange(STAGE_GIF_MIN, STAGE_GIF_MAX);
+function pickRandomStageVideoIndex() {
+  return randomIntInRange(STAGE_VIDEO_MIN, STAGE_VIDEO_MAX);
 }
 
-function buildStageGifSrc(index) {
-  return `./img/jiesuan_${index}.gif`;
+function buildStageVideoSrc(index) {
+  return `./video/jiesuan_${index}.mp4`;
 }
 
 function pickModeForCurrentQuestion(stageId, stage) {
@@ -1125,7 +1150,8 @@ function maybeTriggerGentlePrompt(now) {
   }
 
   const idleMs = now - state.lastInteractionAt;
-  if (idleMs < IDLE_GENTLE_PROMPT_MS) {
+  const idleThresholdMs = state.settings.questionDurationMs;
+  if (idleMs < idleThresholdMs) {
     return;
   }
 
@@ -1491,12 +1517,17 @@ function finishSession() {
   elements.summaryText.textContent = buildSummaryText(accuracy);
 
   elements.summaryModal.classList.remove("hidden");
+  triggerFireworkBurst();
   setSpriteLine("今天的冒险完成啦，明天再见！");
 
   persistSessionToHistory(accuracy);
 }
 
 function triggerFireworkBurst() {
+  if (!elements.fireworkBurst) {
+    return;
+  }
+
   const fireworkSrc = "./img/fireworks-transparent.gif";
   elements.fireworkBurst.src = "";
   // Force replay by resetting src before showing again.
@@ -1568,6 +1599,33 @@ function buildProgressStarLabel(currentAccuracy) {
   }
 
   return "稳定";
+}
+
+function isStageQualifiedForProgress(stageId) {
+  const stage = STAGE_CONFIG[stageId];
+  const stageStats = state.session.currentStageMap[stageId];
+  if (!stage || !stageStats) {
+    return false;
+  }
+
+  const reachedTarget = stageStats.asked >= stage.targetCount;
+  if (!reachedTarget) {
+    return false;
+  }
+
+  if (stageId === "A" || stageId === "B") {
+    return getStageAccuracy(stageId) >= STAGE_PASS_MIN_ACCURACY;
+  }
+
+  return true;
+}
+
+function getStageAccuracy(stageId) {
+  const stageStats = state.session.currentStageMap[stageId];
+  if (!stageStats || stageStats.asked <= 0) {
+    return 0;
+  }
+  return stageStats.correct / stageStats.asked;
 }
 
 function persistSessionToHistory(accuracy) {

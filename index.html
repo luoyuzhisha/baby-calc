@@ -97,7 +97,15 @@
     <div class="overlay-card reward-card">
       <h2 id="rewardTitle">关卡完成</h2>
       <p id="rewardText">太棒了，拿到一颗星星。</p>
-      <img id="stageRewardGif" class="stage-reward-gif hidden" src="" alt="关卡奖励动画">
+      <video
+        id="stageRewardVideo"
+        class="stage-reward-video hidden"
+        autoplay
+        muted
+        playsinline
+        preload="metadata"
+        aria-label="关卡奖励动画"
+      ></video>
       <button id="rewardSkipBtn" type="button" class="action-btn">跳过动画</button>
     </div>
   </div>
@@ -107,7 +115,6 @@
       <h2 id="summaryTitle">今日训练完成</h2>
       <p id="summaryText">小挑战精灵为你喝彩。</p>
 
-      <button id="fireworkBtn" type="button" class="firework-btn">点一下烟花</button>
       <img id="fireworkBurst" class="firework-burst hidden" src="./img/fireworks-transparent.gif" alt="烟花动画">
 
       <div class="summary-grid">
