@@ -527,8 +527,42 @@ body {
 }
 
 .reward-card {
+  position: relative;
   background: linear-gradient(180deg, #f7fbff, #eaf4ff);
   border-color: rgba(96, 147, 207, 0.45);
+}
+
+.reward-mode-control {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reward-mode-label {
+  font-size: 0.76rem;
+  color: #4b6789;
+}
+
+.reward-mode-select {
+  appearance: none;
+  border: 1px solid rgba(84, 129, 182, 0.45);
+  border-radius: 8px;
+  background: #fff;
+  color: #2d4e74;
+  font-size: 0.76rem;
+  line-height: 1;
+  padding: 5px 22px 5px 8px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #4b6789 50%),
+    linear-gradient(135deg, #4b6789 50%, transparent 50%);
+  background-position:
+    calc(100% - 12px) calc(50% - 2px),
+    calc(100% - 8px) calc(50% - 2px);
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
 }
 
 .reward-card h2 {
@@ -540,6 +574,15 @@ body {
 }
 
 .stage-reward-video {
+  display: block;
+  margin: 0 auto 12px;
+  width: min(260px, 70vw);
+  max-width: 260px;
+  height: auto;
+  border-radius: 12px;
+}
+
+.stage-reward-gif {
   display: block;
   margin: 0 auto 12px;
   width: min(260px, 70vw);
@@ -742,5 +785,16 @@ body {
 
   .overlay-actions {
     grid-template-columns: 1fr;
+  }
+
+  .reward-mode-control {
+    top: 8px;
+    right: 10px;
+    gap: 4px;
+  }
+
+  .reward-mode-label,
+  .reward-mode-select {
+    font-size: 0.72rem;
   }
 }

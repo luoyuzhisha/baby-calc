@@ -95,6 +95,13 @@
 
   <div id="rewardOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rewardTitle">
     <div class="overlay-card reward-card">
+      <div class="reward-mode-control">
+        <label for="rewardAnimationModeSelect" class="reward-mode-label">动画模式</label>
+        <select id="rewardAnimationModeSelect" class="reward-mode-select" aria-label="结算动画模式">
+          <option value="video">动画</option>
+          <option value="gif">动图</option>
+        </select>
+      </div>
       <h2 id="rewardTitle">关卡完成</h2>
       <p id="rewardText">太棒了，拿到一颗星星。</p>
       <video
@@ -106,6 +113,11 @@
         preload="metadata"
         aria-label="关卡奖励动画"
       ></video>
+      <img
+        id="stageRewardGif"
+        class="stage-reward-gif hidden"
+        alt="关卡奖励动图"
+      >
       <button id="rewardSkipBtn" type="button" class="action-btn">跳过动画</button>
     </div>
   </div>

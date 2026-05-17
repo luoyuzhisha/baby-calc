@@ -50,7 +50,9 @@ const LIGHT_REWARD_DURATION_MS = 1500;
 const AUTO_NEXT_DELAY_AFTER_CORRECT_MS = LIGHT_REWARD_DURATION_MS;
 const STAGE_VIDEO_MIN = 1;
 const STAGE_VIDEO_MAX = 12;
-const STAGE_REWARD_DURATION_MS = 10000;
+const REWARD_ANIMATION_MODE_VIDEO = "video";
+const REWARD_ANIMATION_MODE_GIF = "gif";
+const STAGE_REWARD_DURATION_MS = 30000;
 const STAGE_PASS_MIN_ACCURACY = 0.8;
 const QUESTION_DURATION_MIN_SEC = 10;
 const QUESTION_DURATION_MAX_SEC = 90;
@@ -153,11 +155,13 @@ const state = {
   settings: {
     soundOn: false,
     questionDurationMs: DEFAULT_QUESTION_MS,
+    rewardAnimationMode: REWARD_ANIMATION_MODE_VIDEO,
   },
   ui: {
     spriteLineKey: "",
     rewardTimerId: null,
     rewardSkippable: false,
+    rewardAnimationIndex: STAGE_VIDEO_MIN,
     lightRewardTimerId: null,
   },
 };
@@ -206,7 +210,9 @@ const elements = {
   rewardOverlay: document.getElementById("rewardOverlay"),
   rewardTitle: document.getElementById("rewardTitle"),
   rewardText: document.getElementById("rewardText"),
+  rewardAnimationModeSelect: document.getElementById("rewardAnimationModeSelect"),
   stageRewardVideo: document.getElementById("stageRewardVideo"),
+  stageRewardGif: document.getElementById("stageRewardGif"),
   rewardSkipBtn: document.getElementById("rewardSkipBtn"),
 
   summaryModal: document.getElementById("summaryModal"),
@@ -228,6 +234,7 @@ function init() {
   loadHistoryAndSettings();
   mountQuestionDurationOptions();
   syncQuestionDurationSelect();
+  syncRewardAnimationModeSelect();
   mountNumberButtons();
   bindEvents();
   setupFullscreenSupport();
@@ -256,6 +263,8 @@ function loadHistoryAndSettings() {
   } else {
     state.settings.questionDurationMs = DEFAULT_QUESTION_MS;
   }
+
+  state.settings.rewardAnimationMode = normalizeRewardAnimationMode(settingsRaw.rewardAnimationMode);
 }
 
 function safeParseJson(text, fallback) {
@@ -296,8 +305,16 @@ function persistSettings() {
     JSON.stringify({
       soundOn: state.settings.soundOn,
       questionDurationMs: state.settings.questionDurationMs,
+      rewardAnimationMode: state.settings.rewardAnimationMode,
     }),
   );
+}
+
+function normalizeRewardAnimationMode(mode) {
+  if (mode === REWARD_ANIMATION_MODE_GIF) {
+    return REWARD_ANIMATION_MODE_GIF;
+  }
+  return REWARD_ANIMATION_MODE_VIDEO;
 }
 
 function mountNumberButtons() {
@@ -363,6 +380,17 @@ function bindEvents() {
     elements.questionDurationSelect.addEventListener("change", applyQuestionDurationFromSelect);
   }
 
+  if (elements.rewardAnimationModeSelect) {
+    elements.rewardAnimationModeSelect.addEventListener("change", () => {
+      state.settings.rewardAnimationMode = normalizeRewardAnimationMode(elements.rewardAnimationModeSelect.value);
+      persistSettings();
+      syncRewardAnimationModeSelect();
+      if (!elements.rewardOverlay.classList.contains("hidden")) {
+        renderStageRewardMedia(state.currentStageId, state.ui.rewardAnimationIndex);
+      }
+    });
+  }
+
   elements.restartBtn.addEventListener("click", startSession);
 
   elements.gentleContinueBtn.addEventListener("click", () => {
@@ -386,6 +414,9 @@ function bindEvents() {
 
   elements.rewardOverlay.addEventListener("click", (event) => {
     if (!state.ui.rewardSkippable) {
+      return;
+    }
+    if (event.target && event.target.closest(".reward-mode-control")) {
       return;
     }
 
@@ -484,6 +515,13 @@ function exitAnyFullscreen() {
 
 function renderSoundButton() {
   elements.soundBtn.textContent = state.settings.soundOn ? "音效：开" : "音效：关";
+}
+
+function syncRewardAnimationModeSelect() {
+  if (!elements.rewardAnimationModeSelect) {
+    return;
+  }
+  elements.rewardAnimationModeSelect.value = normalizeRewardAnimationMode(state.settings.rewardAnimationMode);
 }
 
 function mountQuestionDurationOptions() {
@@ -798,7 +836,8 @@ function completeCurrentStage() {
 function showStageReward(stageId, text) {
   elements.rewardTitle.textContent = `${STAGE_CONFIG[stageId].title} 完成`;
   elements.rewardText.textContent = text;
-  renderStageRewardVideo(stageId);
+  state.ui.rewardAnimationIndex = pickRandomStageVideoIndex();
+  renderStageRewardMedia(stageId, state.ui.rewardAnimationIndex);
   elements.rewardOverlay.classList.remove("hidden");
   state.ui.rewardSkippable = true;
 
@@ -815,7 +854,7 @@ function showStageReward(stageId, text) {
 function closeRewardOverlay() {
   elements.rewardOverlay.classList.add("hidden");
   state.ui.rewardSkippable = false;
-  hideStageRewardVideo();
+  hideStageRewardMedia();
 
   if (state.ui.rewardTimerId) {
     window.clearTimeout(state.ui.rewardTimerId);
@@ -838,25 +877,40 @@ function proceedAfterReward() {
   goToStage(nextStageId);
 }
 
-function renderStageRewardVideo(stageId) {
-  if (!elements.stageRewardVideo) {
+function renderStageRewardMedia(stageId, index) {
+  if (!elements.stageRewardVideo || !elements.stageRewardGif) {
     return;
   }
 
   if (stageId !== "A" && stageId !== "B" && stageId !== "C") {
-    hideStageRewardVideo();
+    hideStageRewardMedia();
+    return;
+  }
+
+  const mode = normalizeRewardAnimationMode(state.settings.rewardAnimationMode);
+  if (mode === REWARD_ANIMATION_MODE_GIF) {
+    renderStageRewardGif(index);
+    return;
+  }
+
+  renderStageRewardVideo(index);
+}
+
+function renderStageRewardVideo(index) {
+  if (!elements.stageRewardVideo || !elements.stageRewardGif) {
     return;
   }
 
   const video = elements.stageRewardVideo;
-  const preferredSrc = buildStageVideoSrc(pickRandomStageVideoIndex());
-  const fallbackSrc = buildStageVideoSrc(STAGE_VIDEO_MIN);
+  const preferredSrc = buildStageRewardSrc(index, REWARD_ANIMATION_MODE_VIDEO);
+  const fallbackSrc = buildStageRewardSrc(STAGE_VIDEO_MIN, REWARD_ANIMATION_MODE_VIDEO);
+  hideStageRewardGif();
 
   const playSource = (src, isFallback) => {
     video.onerror = () => {
       video.onerror = null;
       if (isFallback) {
-        hideStageRewardVideo();
+        hideStageRewardMedia();
         return;
       }
       playSource(fallbackSrc, true);
@@ -880,6 +934,39 @@ function renderStageRewardVideo(stageId) {
   playSource(preferredSrc, preferredSrc === fallbackSrc);
 }
 
+function renderStageRewardGif(index) {
+  if (!elements.stageRewardGif || !elements.stageRewardVideo) {
+    return;
+  }
+
+  const gif = elements.stageRewardGif;
+  const preferredSrc = buildStageRewardSrc(index, REWARD_ANIMATION_MODE_GIF);
+  const fallbackSrc = buildStageRewardSrc(STAGE_VIDEO_MIN, REWARD_ANIMATION_MODE_GIF);
+  hideStageRewardVideo();
+
+  const showSource = (src, isFallback) => {
+    gif.onerror = () => {
+      gif.onerror = null;
+      if (isFallback) {
+        hideStageRewardMedia();
+        return;
+      }
+      showSource(fallbackSrc, true);
+    };
+
+    gif.classList.remove("hidden");
+    gif.removeAttribute("src");
+    gif.src = src;
+  };
+
+  showSource(preferredSrc, preferredSrc === fallbackSrc);
+}
+
+function hideStageRewardMedia() {
+  hideStageRewardVideo();
+  hideStageRewardGif();
+}
+
 function hideStageRewardVideo() {
   if (!elements.stageRewardVideo) {
     return;
@@ -893,11 +980,25 @@ function hideStageRewardVideo() {
   video.load();
 }
 
+function hideStageRewardGif() {
+  if (!elements.stageRewardGif) {
+    return;
+  }
+
+  const gif = elements.stageRewardGif;
+  gif.classList.add("hidden");
+  gif.onerror = null;
+  gif.removeAttribute("src");
+}
+
 function pickRandomStageVideoIndex() {
   return randomIntInRange(STAGE_VIDEO_MIN, STAGE_VIDEO_MAX);
 }
 
-function buildStageVideoSrc(index) {
+function buildStageRewardSrc(index, mode) {
+  if (mode === REWARD_ANIMATION_MODE_GIF) {
+    return `./img/jiesuan_${index}.gif`;
+  }
   return `./video/jiesuan_${index}.mp4`;
 }
 
